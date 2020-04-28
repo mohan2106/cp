@@ -1,113 +1,101 @@
 #include<bits/stdc++.h>
-#include<stdio.h>
-
 using namespace std;
 
+void update(int *tree,int *arr,int * number,int start,int end,int tn,int index){
+    if(index<start || index>end || start>end) return;
 
-void buildTree(char *arr,int *tree,int start,int end,int node){
-    if(start>end) return;
-    if(start == end){
-        tree[node] = arr[start]-'0';
-        return;
+    if(start==end && start==index){
+        if(number[start]==0){
+            number[start]  = 1;
+            tree[tn]  =1;
+        }
+        return ;
     }
-    int mid = (start + end)/2;
-    buildTree(arr,tree,start,mid,2*node);
-    buildTree(arr,tree,mid+1,end,2*node + 1);
-    int t = 1;
-    if((end-mid)%2){
-        t = 2;
+    int mid = (start +end)/2;
+    if(index>mid){
+        update(tree,arr,number,mid+1,end,2*tn+1,index);
+    }else{
+        update(tree,arr,number,start,mid,2*tn,index);
     }
-    tree[node] = (tree[2*node]*t + tree[2*node + 1])%3;
+    int k = arr[end - mid];
+    
+    tree[tn] = (tree[2*tn+1] + (tree[2*tn]*k))%3; 
     return;
 }
-void update(char *arr,int *tree,int start,int end,int index,int node){
-    if(start == end && start == index){
-        arr[start]  ='1';
-        tree[node] = 1;
-        return;
-    }
-    int mid = (start + end)/2;
-    if(index <= mid){
-        update(arr,tree,start,mid,index,2*node);
-    }else{
-        update(arr,tree,mid+1,end,index,2*node + 1);
-    }
-    int t = 1;
-    if((end-mid)%2){
-        t = 2;
-    }
-    tree[node] = (tree[2*node]*t + tree[2*node + 1])%3;
-    return;
+
+
+int query(int *tree,int* arr, int start,int end,int li,int ri,int tn){
+        if(start>ri||li>end){
+                return 0;
+        }
+        if(start>=li&&end<=ri){
+            return (tree[tn]*arr[ri-end])%3;
+        }
+        int mid  = (start+end)/2;
+        int a = query(tree,arr,start,mid,li,ri,2*tn);
+        int b= query(tree,arr,mid+1,end,li,ri,2*tn+1);
+         return  (b%3 + a%3)%3;
+
 }
-pair<int,int> query(int *tree,int start,int end,int left,int right,int node){
-    if(start>end){
-        return {-1,0};
-    }
-    if(start>right || end<left){
-        return {-1,0};
-    }
-    //complete overlapping
-    if(left<=start && right>=end){
-        return {tree[node],end - start +1};
-    }
-    int mid = (start + end)/2;
-    pair<int,int> t1=query(tree,start,mid,left,right,2*node);
-    pair<int,int> t2=query(tree,mid+1,end,left,right,2*node +1);
-    int t = 1;
-    if((t2.second)%2){
-        t = 2;
-    }
+void buildTree(int * number,int *tree,int *arr,int start,int end,int tn){
     
-    if(t1.first== (-1) && t2.first == -1){
-        return {-1,0};
-    }else if(t1.first == -1){
-        return t2;
-    }else if(t2.first == -1){
-        return t1;
-    }else{
-        return {((t1.first)*t + (t2.first))%3,t1.second + t2.second};
-        // return comp(arr,t1,t2);
+    if(start==end ){
+        tree[tn] = number[start];
+        return ;
     }
-    
+    int mid  = (start+end)/2;
+
+    buildTree(number,tree,arr,start,mid,2*tn);
+    buildTree(number,tree,arr,mid+1,end,2*tn+1);
+    int k = arr[end - mid];
+    tree[tn] = (tree[2*tn+1]%3 + tree[2*tn]*k)%3;
 }
 
-int main() {
-    
+int main(){ 
+
     int n;
     cin>>n;
-    string str;
-    cin>>str;
-    char arr[n+1];
+    string s;
+    cin>>s;
+
+    int * number  = new int[n+1];
+
     for(int i=0;i<n;i++){
-        arr[i] = str[i];
+
+        number[i+1] = s[i] - '0';
     }
-    arr[n] = '\0';
-    int t = 1;
-    while(t<n){
-        t = t<<1;
-    }
-    int *tree = new int[2*t];
-    buildTree(arr,tree,0,n-1,1);
-    // for(int i=0;i<2*t;i++){
-    //     cout<<tree[i]<<" ";
-    // }
-    // cout<<'\n';
-    
-    int q;
-    cin>>q;
-    while(q--){
-        int z;
-        cin>>z;
-        if(z==0){
-            int l,r;
-            cin>>l>>r;
-            pair<int,int> ans =query(tree,0,n-1,l,r,1);
-            cout<<ans.first<<'\n';
-        }else{
-            int l;
-            cin>>l;
-            update(arr,tree,0,n-1,l,1);
+
+    int *tree = new int [4*n];
+
+    int *arr = new int[100001];
+        arr[0] =1;
+        for(int i=1;i<=100000;i++){
+
+                arr[i] = (arr[i-1]*2)%3;
         }
-    }
-	// Write your code here
+    buildTree(number,tree,arr,1,n,1);
+
+    int t;
+    cin>>t;
+
+    while(t--){
+
+        int type;
+        cin>>type;
+
+        if(type==0){
+            int first,second;
+            cin>>first>>second;
+            int anss = query(tree,arr,1,n,first+1,second+1,1);
+            cout<<anss<<endl;
+
+        }else{
+            int index;
+            cin>>index;
+            update(tree,arr,number,1,n,1,index+1);
+
+        }
+
+    } 
+    return 0;
 }
